@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { getCheckoutDuration } from "@/lib/checkout";
 
 type Status = "idle" | "loading" | "done";
 
@@ -13,7 +14,19 @@ export default function PerformanceDemoPage() {
     setStatus("loading");
     const start = Date.now();
     await fetch("/api/slow-route");
-    setDuration(Date.now() - start);
+    const end = Date.now();
+    // BUG: getCheckoutDuration divides by 0 — returns Infinity
+    const ms = getCheckoutDuration(start, end);
+    import("@sentry/nextjs").then(({ captureMessage }) => {
+      if (!isFinite(ms)) {
+        captureMessage("Checkout duration calculation returned Infinity", {
+          level: "error",
+          tags: { scenario: "performance" },
+          extra: { start, end, result: ms },
+        });
+      }
+    }).catch(() => {});
+    setDuration(ms);
     setStatus("done");
   }
 
@@ -64,8 +77,7 @@ export default function PerformanceDemoPage() {
               <a href="https://sentry.io" target="_blank" rel="noopener noreferrer" className="text-violet-400 underline">
                 Sentry Performance
               </a>{" "}
-              tab — find the <code className="bg-gray-800 px-1 rounded">GET /api/slow-route</code> transaction and expand
-              the span waterfall to see the <code className="bg-gray-800 px-1 rounded">checkout.database.query</code> span.
+              tab — find the <code className="bg-gray-800 px-1 rounded">GET /api/slow-route</code> transaction.
             </p>
             <button
               onClick={() => { setStatus("idle"); setDuration(null); }}
