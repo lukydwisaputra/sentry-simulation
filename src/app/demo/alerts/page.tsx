@@ -8,7 +8,7 @@ type Status = "idle" | "loading" | "done" | "failed";
 export default function AlertsDemoPage() {
   const [status, setStatus] = useState<Status>("idle");
 
-  async function triggerServerError() {
+  async function checkInventory() {
     setStatus("loading");
     const res = await fetch("/api/broken-route");
     setStatus(res.ok ? "done" : "failed");
@@ -45,16 +45,33 @@ export default function AlertsDemoPage() {
         </div>
 
         {status === "idle" && (
-          <button
-            onClick={triggerServerError}
-            className="bg-orange-600 hover:bg-orange-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors"
-          >
-            Trigger Server 500
-          </button>
+          <div className="flex gap-3 flex-wrap">
+            <button
+              onClick={checkInventory}
+              className="bg-violet-700 hover:bg-violet-800 text-white font-semibold px-5 py-2.5 rounded-lg transition-colors text-sm"
+            >
+              Check Inventory
+            </button>
+            <button
+              onClick={checkInventory}
+              className="bg-orange-600 hover:bg-orange-700 text-white font-semibold px-5 py-2.5 rounded-lg transition-colors text-sm"
+            >
+              Trigger Server 500
+            </button>
+          </div>
         )}
 
         {status === "loading" && (
           <div className="text-orange-400">Calling /api/broken-route...</div>
+        )}
+
+        {status === "done" && (
+          <div>
+            <div className="bg-green-950 border border-green-700 rounded-lg px-4 py-3 mb-4">
+              <p className="text-green-300 font-mono text-sm">Inventory OK</p>
+            </div>
+            <button onClick={() => setStatus("idle")} className="text-sm text-gray-500 hover:text-gray-300 underline">Reset</button>
+          </div>
         )}
 
         {status === "failed" && (
@@ -67,14 +84,9 @@ export default function AlertsDemoPage() {
               <a href="https://sentry.io" target="_blank" rel="noopener noreferrer" className="text-violet-400 underline">
                 Sentry Issues
               </a>{" "}
-              dashboard for the new server-side error. If you configured an alert rule, check your email or Slack for the notification.
+              dashboard for the new server-side error.
             </p>
-            <button
-              onClick={() => setStatus("idle")}
-              className="text-sm text-gray-500 hover:text-gray-300 underline"
-            >
-              Reset
-            </button>
+            <button onClick={() => setStatus("idle")} className="text-sm text-gray-500 hover:text-gray-300 underline">Reset</button>
           </div>
         )}
       </div>

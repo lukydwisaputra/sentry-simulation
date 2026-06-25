@@ -1,9 +1,10 @@
 import * as Sentry from "@sentry/nextjs";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { fetchInventory } from "@/lib/inventory";
 
-export async function GET(): Promise<NextResponse> {
-  // BUG: fetchInventory throws when warehouseId is empty — no try/catch wraps this await
-  const inventory = await fetchInventory("");
+export async function GET(req: NextRequest): Promise<NextResponse> {
+  const warehouseId = req.nextUrl.searchParams.get("warehouseId") ?? "";
+  // BUG: warehouseId defaults to "" — fetchInventory throws when warehouseId is empty
+  const inventory = await fetchInventory(warehouseId);
   return NextResponse.json({ status: "ok", inventory });
 }
