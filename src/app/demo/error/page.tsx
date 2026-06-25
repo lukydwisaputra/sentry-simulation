@@ -25,7 +25,7 @@ export default function ErrorDemoPage() {
       import("@sentry/nextjs").then(({ captureException }) =>
         captureException(err, {
           tags: { scenario: "error-tracking" },
-          extra: { payload: null, reason: "payment context missing at checkout" },
+          extra: { payload: DEMO_PAYLOAD, reason: "unexpected error processing valid payload" },
         })
       ).catch(() => {});
     }

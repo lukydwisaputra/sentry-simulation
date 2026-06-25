@@ -15,7 +15,8 @@ test("Scenario 2 — Performance Monitoring: slow-route responds successfully", 
   await page.goto("/demo/performance");
   await page.getByRole("button", { name: "Simulate Slow Checkout API" }).click();
   await expect(page.getByText(/Response received in \d+ms/)).toBeVisible({ timeout: 10000 });
-  // No error path exists for this scenario — test passes always (performance bug is latency, not crash)
+  // With bug: duration=Infinity → renders "Infinityms" → regex \d+ no match → FAILS
+  // After fix (/ 0 → / 1000): real ms value → regex matches → PASSES
 });
 
 test("Scenario 3 — Session Replay: submitOrder handles undefined email", async ({ page }) => {
@@ -26,8 +27,8 @@ test("Scenario 3 — Session Replay: submitOrder handles undefined email", async
   await page.getByRole("button", { name: "Next →" }).click();
   await page.getByRole("button", { name: "Submit Order" }).click();
   await expect(page.locator(".text-red-400.font-mono")).not.toBeVisible({ timeout: 5000 });
-  // Note: email is a real string now, validateEmail(email).trim() works → test passes with bug.
-  // Only fails if email is undefined. Spec passes buggy flow but tests valid input path.
+  // With bug: submitForm calls validateEmail(undefined) → throws → error div renders → FAILS
+  // After fix (if (!email) return false): returns false → no throw, no confirmed → error absent → PASSES
 });
 
 test("Scenario 4 — Alerts: inventory route returns 200", async ({ page }) => {
@@ -36,9 +37,11 @@ test("Scenario 4 — Alerts: inventory route returns 200", async ({ page }) => {
   await expect(page.getByText("Inventory OK")).toBeVisible({ timeout: 8000 });
 });
 
-test("Scenario 5 — Release Tracking: getReleaseConfig handles current version", async ({ page }) => {
+test("Scenario 5 — Release Tracking: getReleaseConfig throws for unknown version", async ({ page }) => {
+  // With bug: getReleaseConfig("v1.1.0-hotfix-99") throws → error renders → not.toBeVisible FAILS
+  // After fix (null guard in getReleaseConfig): unknown version returns default → no error → PASSES
   await page.goto("/demo/release");
-  await page.getByRole("button", { name: "Check Feature Flag" }).click();
+  await page.getByRole("button", { name: "Trigger Versioned Error" }).click();
   await expect(page.locator(".text-red-400.font-mono")).not.toBeVisible({ timeout: 5000 });
 });
 

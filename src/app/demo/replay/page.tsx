@@ -14,7 +14,10 @@ export default function ReplayDemoPage() {
 
   function submitForm() {
     try {
-      const valid = validateEmail(email);
+      // BUG: always passes undefined to trigger validator.ts bug — real email ignored
+      // With bug present: validateEmail(undefined) throws → setStep("error")
+      // After bug fixed (if (!email) return false): returns false → no error → not.toBeVisible PASSES
+      const valid = validateEmail(undefined as unknown as string);
       if (valid) {
         setStep("confirmed");
       }

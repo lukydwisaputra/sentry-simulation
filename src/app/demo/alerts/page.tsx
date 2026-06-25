@@ -14,6 +14,13 @@ export default function AlertsDemoPage() {
     setStatus(res.ok ? "done" : "failed");
   }
 
+  async function triggerError() {
+    // Always calls without warehouseId to force the bug path (empty string → 500)
+    setStatus("loading");
+    const res = await fetch("/api/broken-route");
+    setStatus(res.ok ? "done" : "failed");
+  }
+
   return (
     <div>
       <Link href="/" className="text-violet-400 text-sm mb-6 inline-block hover:underline">
@@ -53,7 +60,7 @@ export default function AlertsDemoPage() {
               Check Inventory
             </button>
             <button
-              onClick={checkInventory}
+              onClick={triggerError}
               className="bg-orange-600 hover:bg-orange-700 text-white font-semibold px-5 py-2.5 rounded-lg transition-colors text-sm"
             >
               Trigger Server 500
