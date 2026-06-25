@@ -5,6 +5,8 @@ export type PaymentPayload = {
 };
 
 export function formatPaymentSummary(payload: PaymentPayload | undefined): string {
-  // BUG: payload can be undefined when payment context is missing — accessing .amount throws TypeError
+  if (!payload) {
+    return "No payment context available";
+  }
   return `${payload.currency.toUpperCase()} ${payload.amount.toFixed(2)} charged to ${payload.customerId}`;
 }
