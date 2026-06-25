@@ -41,6 +41,30 @@ const demos = [
     color: "border-green-500",
     badge: "bg-green-500",
   },
+  {
+    href: "/demo/seer-cart",
+    title: "6. Seer Autofix — Cart Null Reference",
+    description: "Trigger a TypeError from an empty cart, then use Seer to auto-fix src/lib/cart.ts and open a GitHub PR.",
+    feature: "Autofix",
+    color: "border-purple-500",
+    badge: "bg-purple-500",
+  },
+  {
+    href: "/demo/seer-checkout",
+    title: "7. Seer Autofix — Unhandled Promise",
+    description: "Submit a $0 checkout to crash the server route, then let Seer add try/catch and create a PR.",
+    feature: "Autofix",
+    color: "border-purple-500",
+    badge: "bg-purple-500",
+  },
+  {
+    href: "/demo/seer-recommendations",
+    title: "8. Seer Autofix — Off-by-One Array",
+    description: "Pass userId=100 to overflow the product array, then watch Seer clamp the index and open a PR.",
+    feature: "Autofix",
+    color: "border-purple-500",
+    badge: "bg-purple-500",
+  },
 ];
 
 export default function HomePage() {
