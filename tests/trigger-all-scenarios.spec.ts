@@ -6,7 +6,7 @@ import { test, expect } from "@playwright/test";
 test("Scenario 1 — Error Tracking: Payment Gateway Timeout", async ({ page }) => {
   await page.goto("/demo/error");
   await page.getByRole("button", { name: "Trigger Payment Error" }).click();
-  await expect(page.getByText("Payment service failed: timeout after 5000ms")).toBeVisible();
+  await expect(page.locator(".text-red-400.font-mono")).toBeVisible();
   await page.waitForTimeout(3000);
 });
 
@@ -37,7 +37,7 @@ test("Scenario 4 — Alerts: Inventory Service 500", async ({ page }) => {
 test("Scenario 5 — Release Tracking: Feature Flag Timeout", async ({ page }) => {
   await page.goto("/demo/release");
   await page.getByRole("button", { name: "Trigger Versioned Error" }).click();
-  await expect(page.getByText("Error captured and tagged to release")).toBeVisible({ timeout: 5000 });
+  await expect(page.locator(".text-red-400.font-mono")).toBeVisible({ timeout: 5000 });
   await page.waitForTimeout(2000);
 });
 

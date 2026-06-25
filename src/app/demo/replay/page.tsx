@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import * as Sentry from "@sentry/nextjs";
+import { validateEmail } from "@/lib/validator";
 
 type Step = 1 | 2 | 3 | "error";
 
@@ -10,11 +10,23 @@ export default function ReplayDemoPage() {
   const [step, setStep] = useState<Step>(1);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   function submitForm() {
-    const err = new Error("Form submission failed: CSRF token mismatch");
-    Sentry.captureException(err);
-    setStep("error");
+    try {
+      // Simulates a race condition — email cleared before validation runs
+      validateEmail(undefined);
+    } catch (err) {
+      const e = err as Error;
+      setErrorMsg(e.message);
+      import("@sentry/nextjs").then(({ captureException }) =>
+        captureException(err, {
+          tags: { scenario: "session-replay" },
+          extra: { name, email: null, reason: "email state undefined at submit" },
+        })
+      ).catch(() => {});
+      setStep("error");
+    }
   }
 
   return (
@@ -113,18 +125,18 @@ export default function ReplayDemoPage() {
         {step === "error" && (
           <div>
             <div className="bg-red-950 border border-red-700 rounded-lg px-4 py-3 mb-4">
-              <p className="text-red-400 font-mono text-sm">Error: Form submission failed: CSRF token mismatch</p>
+              <p className="text-red-400 font-mono text-sm">TypeError: {errorMsg}</p>
             </div>
             <p className="text-gray-400 text-sm mb-4">
-              Error sent to Sentry. Open your{" "}
+              Open your{" "}
               <a href="https://sentry.io" target="_blank" rel="noopener noreferrer" className="text-violet-400 underline">
                 Sentry Issues
               </a>{" "}
-              dashboard → find this error → click the <strong>Replay</strong> tab to watch the recording of exactly
-              what you typed and clicked.
+              dashboard → find this error → click the <strong>Replay</strong> tab to watch the recording.
+              Then click <strong>Autofix</strong> — Seer reads <code className="bg-gray-900 px-1 rounded">src/lib/validator.ts</code> and adds the null guard.
             </p>
             <button
-              onClick={() => { setStep(1); setName(""); setEmail(""); }}
+              onClick={() => { setStep(1); setName(""); setEmail(""); setErrorMsg(null); }}
               className="text-sm text-gray-500 hover:text-gray-300 underline"
             >
               Reset

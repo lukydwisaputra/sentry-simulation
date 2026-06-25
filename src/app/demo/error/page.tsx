@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { formatPaymentSummary } from "@/lib/payment";
 
 export default function ErrorDemoPage() {
   const [triggered, setTriggered] = useState(false);
@@ -10,11 +11,17 @@ export default function ErrorDemoPage() {
   function triggerError() {
     setTriggered(true);
     try {
-      throw new Error("Payment service failed: timeout after 5000ms");
+      // Simulates missing payment context — passes undefined to trigger the bug
+      formatPaymentSummary(undefined);
     } catch (err) {
       const e = err as Error;
       setError(e.message);
-      import("@sentry/nextjs").then(({ captureException }) => captureException(err));
+      import("@sentry/nextjs").then(({ captureException }) =>
+        captureException(err, {
+          tags: { scenario: "error-tracking" },
+          extra: { payload: null, reason: "payment context missing at checkout" },
+        })
+      ).catch(() => {});
     }
   }
 
@@ -36,7 +43,11 @@ export default function ErrorDemoPage() {
       </div>
 
       <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
-        <h3 className="font-semibold mb-4">Scenario: Payment Gateway Timeout</h3>
+        <h3 className="font-semibold mb-1">Scenario: Payment Gateway Timeout</h3>
+        <p className="text-gray-500 text-sm mb-5">
+          File: <code className="bg-gray-800 px-1 rounded">src/lib/payment.ts</code> ·{" "}
+          Bug: <code className="bg-gray-800 px-1 rounded">payload.amount</code> — no null guard
+        </p>
 
         {!triggered ? (
           <button
@@ -48,7 +59,7 @@ export default function ErrorDemoPage() {
         ) : (
           <div>
             <div className="bg-red-950 border border-red-700 rounded-lg px-4 py-3 mb-4">
-              <p className="text-red-400 font-mono text-sm">Error: {error}</p>
+              <p className="text-red-400 font-mono text-sm">TypeError: {error}</p>
             </div>
             <p className="text-gray-400 text-sm mb-4">
               Error sent to Sentry. Open your{" "}
@@ -58,7 +69,7 @@ export default function ErrorDemoPage() {
               dashboard — it should appear within 5 seconds.
             </p>
             <p className="text-gray-500 text-xs">
-              In Sentry: click the issue → see stack trace, breadcrumbs, browser context, and affected users.
+              In Sentry: click the issue → see stack trace pointing to <code className="bg-gray-900 px-1 rounded">src/lib/payment.ts</code> → click Autofix → Seer proposes null guard fix → Create PR.
             </p>
           </div>
         )}
