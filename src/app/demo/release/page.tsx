@@ -4,27 +4,54 @@ import { useState } from "react";
 import Link from "next/link";
 import { getReleaseConfig } from "@/lib/release";
 
+type Status = "idle" | "success" | "crashed";
+
 export default function ReleaseDemoPage() {
-  const [triggered, setTriggered] = useState(false);
+  const [status, setStatus] = useState<Status>("idle");
+  const [flagName, setFlagName] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const version = process.env.NEXT_PUBLIC_APP_VERSION ?? "unknown";
 
+  function checkFeatureFlag() {
+    try {
+      const config = getReleaseConfig(version);
+      const enabledFlag = Object.entries(config.featureFlags).find(([, v]) => v)?.[0] ?? "none";
+      setFlagName(enabledFlag);
+      setStatus("success");
+    } catch (err) {
+      const e = err as Error;
+      setErrorMsg(e.message);
+      setStatus("crashed");
+      import("@sentry/nextjs").then(({ captureException }) =>
+        captureException(err, {
+          tags: { release: version, scenario: "release-tracking" },
+          extra: { requestedVersion: version },
+        })
+      ).catch(() => {});
+    }
+  }
+
   function triggerVersionedError() {
     try {
-      // Passes an unknown version to trigger the undefined config bug
       const unknownVersion = `${version}-hotfix-99`;
       getReleaseConfig(unknownVersion);
     } catch (err) {
       const e = err as Error;
       setErrorMsg(e.message);
+      setStatus("crashed");
       import("@sentry/nextjs").then(({ captureException }) =>
         captureException(err, {
           tags: { release: version, scenario: "release-tracking" },
-          extra: { requestedVersion: `${version}-hotfix-99`, knownVersions: ["v1.0.0-demo"] },
+          extra: { requestedVersion: `${version}-hotfix-99`, knownVersions: [version] },
         })
       ).catch(() => {});
     }
-    setTriggered(true);
+  }
+
+  function reset() {
+    setStatus("idle");
+    setFlagName(null);
+    setErrorMsg(null);
   }
 
   return (
@@ -39,8 +66,7 @@ export default function ReleaseDemoPage() {
         <h3 className="font-semibold text-violet-300 mb-1">What this shows</h3>
         <p className="text-gray-400 text-sm">
           Sentry links every error to the release (version/git SHA) that first introduced it.
-          When a new deploy causes a regression, Sentry surfaces it immediately: &quot;This issue first appeared in v2.1.4.&quot;
-          You can correlate error spikes with deploys without digging through logs.
+          When a new deploy causes a regression, Sentry surfaces it immediately.
         </p>
       </div>
 
@@ -56,20 +82,33 @@ export default function ReleaseDemoPage() {
           <p className="text-green-400 font-mono font-bold">{version}</p>
         </div>
 
-        {!triggered ? (
-          <div>
-            <p className="text-gray-400 text-sm mb-4">
-              Click below to throw an error tagged to release <code className="bg-gray-800 px-1 rounded">{version}</code>.
-              Sentry will record which release this error first appeared in.
-            </p>
+        {status === "idle" && (
+          <div className="flex gap-3 flex-wrap">
+            <button
+              onClick={checkFeatureFlag}
+              className="bg-violet-700 hover:bg-violet-800 text-white font-semibold px-5 py-2.5 rounded-lg transition-colors text-sm"
+            >
+              Check Feature Flag
+            </button>
             <button
               onClick={triggerVersionedError}
-              className="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors"
+              className="bg-green-600 hover:bg-green-700 text-white font-semibold px-5 py-2.5 rounded-lg transition-colors text-sm"
             >
               Trigger Versioned Error
             </button>
           </div>
-        ) : (
+        )}
+
+        {status === "success" && (
+          <div>
+            <div className="bg-green-950 border border-green-700 rounded-lg px-4 py-3 mb-4">
+              <p className="text-green-300 font-mono text-sm">Flag enabled: {flagName}</p>
+            </div>
+            <button onClick={reset} className="text-sm text-gray-500 hover:text-gray-300 underline">Reset</button>
+          </div>
+        )}
+
+        {status === "crashed" && (
           <div>
             <div className="bg-red-950 border border-red-700 rounded-lg px-4 py-3 mb-4">
               <p className="text-red-400 font-mono text-sm">TypeError: {errorMsg}</p>
@@ -80,15 +119,9 @@ export default function ReleaseDemoPage() {
                 Sentry Issues
               </a>{" "}
               dashboard → find the release config error → look for{" "}
-              <strong>First seen in release {version}</strong>. Click <strong>Autofix</strong> — Seer reads{" "}
-              <code className="bg-gray-900 px-1 rounded">src/lib/release.ts</code> and adds the undefined guard.
+              <strong>First seen in release {version}</strong>.
             </p>
-            <button
-              onClick={() => { setTriggered(false); setErrorMsg(null); }}
-              className="text-sm text-gray-500 hover:text-gray-300 underline"
-            >
-              Reset
-            </button>
+            <button onClick={reset} className="text-sm text-gray-500 hover:text-gray-300 underline">Reset</button>
           </div>
         )}
       </div>

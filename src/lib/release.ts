@@ -10,6 +10,11 @@ const RELEASE_CONFIGS: Record<string, ReleaseConfig> = {
     featureFlags: { newCheckout: true, betaDashboard: false },
     deployedAt: "2026-06-25T00:00:00Z",
   },
+  "v1.1.0": {
+    version: "v1.1.0",
+    featureFlags: { newCheckout: true, betaDashboard: true },
+    deployedAt: "2026-06-25T00:00:00Z",
+  },
 };
 
 export function getReleaseConfig(version: string): ReleaseConfig {
