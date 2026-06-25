@@ -14,3 +14,9 @@ Sentry.init({
   ],
   debug: false,
 });
+
+Sentry.setUser({
+  id: "demo-user-1",
+  username: "demo-user",
+  email: "demo@werkdone.com",
+});
