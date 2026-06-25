@@ -4,18 +4,24 @@ import { useState } from "react";
 import Link from "next/link";
 import { formatPaymentSummary } from "@/lib/payment";
 
+type Status = "idle" | "success" | "crashed";
+
+const DEMO_PAYLOAD = { amount: 99.00, currency: "USD", customerId: "cust_demo" };
+
 export default function ErrorDemoPage() {
-  const [triggered, setTriggered] = useState(false);
+  const [status, setStatus] = useState<Status>("idle");
+  const [summary, setSummary] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  function triggerError() {
-    setTriggered(true);
+  function processPayment() {
     try {
-      // Simulates missing payment context — passes undefined to trigger the bug
-      formatPaymentSummary(undefined);
+      const result = formatPaymentSummary(DEMO_PAYLOAD);
+      setSummary(result);
+      setStatus("success");
     } catch (err) {
       const e = err as Error;
       setError(e.message);
+      setStatus("crashed");
       import("@sentry/nextjs").then(({ captureException }) =>
         captureException(err, {
           tags: { scenario: "error-tracking" },
@@ -23,6 +29,29 @@ export default function ErrorDemoPage() {
         })
       ).catch(() => {});
     }
+  }
+
+  function triggerError() {
+    try {
+      // Simulates missing payment context — passes undefined to trigger the bug
+      formatPaymentSummary(undefined as any);
+    } catch (err) {
+      const e = err as Error;
+      setError(e.message);
+      setStatus("crashed");
+      import("@sentry/nextjs").then(({ captureException }) =>
+        captureException(err, {
+          tags: { scenario: "error-tracking" },
+          extra: { payload: null, reason: "payment context missing at checkout" },
+        })
+      ).catch(() => {});
+    }
+  }
+
+  function reset() {
+    setStatus("idle");
+    setSummary(null);
+    setError(null);
   }
 
   return (
@@ -49,14 +78,33 @@ export default function ErrorDemoPage() {
           Bug: <code className="bg-gray-800 px-1 rounded">payload.amount</code> — no null guard
         </p>
 
-        {!triggered ? (
-          <button
-            onClick={triggerError}
-            className="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors"
-          >
-            Trigger Payment Error
-          </button>
-        ) : (
+        {status === "idle" && (
+          <div className="flex gap-3 flex-wrap">
+            <button
+              onClick={processPayment}
+              className="bg-violet-700 hover:bg-violet-800 text-white font-semibold px-5 py-2.5 rounded-lg transition-colors text-sm"
+            >
+              Process Payment
+            </button>
+            <button
+              onClick={triggerError}
+              className="bg-red-600 hover:bg-red-700 text-white font-semibold px-5 py-2.5 rounded-lg transition-colors text-sm"
+            >
+              Trigger Payment Error
+            </button>
+          </div>
+        )}
+
+        {status === "success" && (
+          <div>
+            <div className="bg-green-950 border border-green-700 rounded-lg px-4 py-3 mb-4">
+              <p className="text-green-300 font-mono text-sm">Payment processed: {summary}</p>
+            </div>
+            <button onClick={reset} className="text-sm text-gray-500 hover:text-gray-300 underline">Reset</button>
+          </div>
+        )}
+
+        {status === "crashed" && (
           <div>
             <div className="bg-red-950 border border-red-700 rounded-lg px-4 py-3 mb-4">
               <p className="text-red-400 font-mono text-sm">TypeError: {error}</p>
@@ -68,9 +116,7 @@ export default function ErrorDemoPage() {
               </a>{" "}
               dashboard — it should appear within 5 seconds.
             </p>
-            <p className="text-gray-500 text-xs">
-              In Sentry: click the issue → see stack trace pointing to <code className="bg-gray-900 px-1 rounded">src/lib/payment.ts</code> → click Autofix → Seer proposes null guard fix → Create PR.
-            </p>
+            <button onClick={reset} className="text-sm text-gray-500 hover:text-gray-300 underline">Reset</button>
           </div>
         )}
       </div>
