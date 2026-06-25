@@ -48,7 +48,7 @@ export default function SeerRecommendationsPage() {
           productsLength: 10,
         },
       })
-    );
+    ).catch(() => {});
   }
 
   function reset() {

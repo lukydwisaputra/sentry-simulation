@@ -12,17 +12,22 @@ export default function SeerCheckoutPage() {
 
   async function triggerValidCheckout() {
     setStatus("loading");
-    const res = await fetch("/api/checkout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ amount: 149, userId: "user_demo_001" }),
-    });
-    const data = await res.json();
-    if (res.ok) {
-      setOrderId(data.orderId);
-      setStatus("success");
-    } else {
-      setErrorDetail(data.error ?? "Unknown server error");
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: 149, userId: "user_demo_001" }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setOrderId(data.orderId);
+        setStatus("success");
+      } else {
+        setErrorDetail(data.error ?? "Unknown server error");
+        setStatus("failed");
+      }
+    } catch {
+      setErrorDetail("Network error — could not reach server");
       setStatus("failed");
     }
   }

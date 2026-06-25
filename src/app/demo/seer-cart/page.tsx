@@ -28,7 +28,7 @@ export default function SeerCartPage() {
           tags: { scenario: "seer-cart", trigger: "with-items" },
           extra: { items: MOCK_ITEMS },
         })
-      );
+      ).catch(() => {});
     }
   }
 
@@ -47,7 +47,7 @@ export default function SeerCartPage() {
           tags: { scenario: "seer-cart", trigger: "empty-cart" },
           extra: { items: null, reason: "user had empty cart at checkout" },
         })
-      );
+      ).catch(() => {});
     }
   }
 
