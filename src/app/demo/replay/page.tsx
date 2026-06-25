@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { validateEmail } from "@/lib/validator";
 
-type Step = 1 | 2 | 3 | "error";
+type Step = 1 | 2 | 3 | "confirmed" | "error";
 
 export default function ReplayDemoPage() {
   const [step, setStep] = useState<Step>(1);
@@ -14,8 +14,10 @@ export default function ReplayDemoPage() {
 
   function submitForm() {
     try {
-      // Simulates a race condition — email cleared before validation runs
-      validateEmail(undefined);
+      const valid = validateEmail(email);
+      if (valid) {
+        setStep("confirmed");
+      }
     } catch (err) {
       const e = err as Error;
       setErrorMsg(e.message);
@@ -27,6 +29,13 @@ export default function ReplayDemoPage() {
       ).catch(() => {});
       setStep("error");
     }
+  }
+
+  function reset() {
+    setStep(1);
+    setName("");
+    setEmail("");
+    setErrorMsg(null);
   }
 
   return (
@@ -48,7 +57,7 @@ export default function ReplayDemoPage() {
 
       <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
         <h3 className="font-semibold mb-1">Scenario: Multi-Step Checkout Form</h3>
-        <p className="text-gray-500 text-xs mb-6">Fill in the form — it will crash on submit. Sentry records every step.</p>
+        <p className="text-gray-500 text-xs mb-6">Fill in the form and submit. Sentry records every step.</p>
 
         {step === 1 && (
           <div>
@@ -81,12 +90,7 @@ export default function ReplayDemoPage() {
               className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 mb-4 text-white focus:outline-none focus:border-violet-500"
             />
             <div className="flex gap-3">
-              <button
-                onClick={() => setStep(1)}
-                className="text-sm text-gray-500 hover:text-gray-300 underline"
-              >
-                ← Back
-              </button>
+              <button onClick={() => setStep(1)} className="text-sm text-gray-500 hover:text-gray-300 underline">← Back</button>
               <button
                 onClick={() => email.trim() && setStep(3)}
                 disabled={!email.trim()}
@@ -106,12 +110,7 @@ export default function ReplayDemoPage() {
               <p>Email: {email}</p>
             </div>
             <div className="flex gap-3">
-              <button
-                onClick={() => setStep(2)}
-                className="text-sm text-gray-500 hover:text-gray-300 underline"
-              >
-                ← Back
-              </button>
+              <button onClick={() => setStep(2)} className="text-sm text-gray-500 hover:text-gray-300 underline">← Back</button>
               <button
                 onClick={submitForm}
                 className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg transition-colors"
@@ -119,6 +118,15 @@ export default function ReplayDemoPage() {
                 Submit Order
               </button>
             </div>
+          </div>
+        )}
+
+        {step === "confirmed" && (
+          <div>
+            <div className="bg-green-950 border border-green-700 rounded-lg px-4 py-3 mb-4">
+              <p className="text-green-300 font-mono text-sm">Order confirmed: #ORD-demo</p>
+            </div>
+            <button onClick={reset} className="text-sm text-gray-500 hover:text-gray-300 underline">Reset</button>
           </div>
         )}
 
@@ -133,14 +141,8 @@ export default function ReplayDemoPage() {
                 Sentry Issues
               </a>{" "}
               dashboard → find this error → click the <strong>Replay</strong> tab to watch the recording.
-              Then click <strong>Autofix</strong> — Seer reads <code className="bg-gray-900 px-1 rounded">src/lib/validator.ts</code> and adds the null guard.
             </p>
-            <button
-              onClick={() => { setStep(1); setName(""); setEmail(""); setErrorMsg(null); }}
-              className="text-sm text-gray-500 hover:text-gray-300 underline"
-            >
-              Reset
-            </button>
+            <button onClick={reset} className="text-sm text-gray-500 hover:text-gray-300 underline">Reset</button>
           </div>
         )}
       </div>
