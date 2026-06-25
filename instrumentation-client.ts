@@ -6,6 +6,11 @@ Sentry.init({
   replaysSessionSampleRate: 1.0,
   replaysOnErrorSampleRate: 1.0,
   release: process.env.NEXT_PUBLIC_APP_VERSION,
-  integrations: [Sentry.replayIntegration()],
+  integrations: [
+    Sentry.replayIntegration({
+      maskAllInputs: false,
+      maskAllText: false,
+    }),
+  ],
   debug: false,
 });
