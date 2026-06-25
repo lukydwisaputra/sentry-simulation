@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:scenarios": "playwright test tests/trigger-all-scenarios.spec.ts --reporter=list"
   },
   "dependencies": {
     "@sentry/nextjs": "^10.58.0",
@@ -15,6 +16,7 @@
     "react-dom": "^18"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
