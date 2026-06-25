@@ -5,8 +5,6 @@ export type PaymentPayload = {
 };
 
 export function formatPaymentSummary(payload: PaymentPayload | undefined): string {
-  if (!payload) {
-    throw new Error("Payment payload is required");
-  }
+  // BUG: payload can be undefined when payment context is missing — accessing .amount throws TypeError
   return `${payload.currency.toUpperCase()} ${payload.amount.toFixed(2)} charged to ${payload.customerId}`;
 }
